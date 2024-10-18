@@ -43,8 +43,11 @@ module.exports = function (context, options) {
         }
       }
       options.resolved = true;
+      const testMdFilename = 'test.md';
+      const testMdxFilename = 'test.mdx';
       const newRules = config.module.rules.map(rule => {
-        if (rule.use && rule.use.some(({ loader }) => loader && loader.includes("plugin-content-docs"))) {
+        const ruleRegExp = new RegExp(rule.test);
+        if (ruleRegExp.test(testMdFilename) && ruleRegExp.test(testMdxFilename)) {
           rule.oneOf = [
             {
               test: glossaryRegex,
