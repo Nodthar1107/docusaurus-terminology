@@ -43,43 +43,56 @@ module.exports = function (context, options) {
         }
       }
       options.resolved = true;
-      const testMdFilename = 'test.md';
-      const testMdxFilename = 'test.mdx';
-      const newRules = config.module.rules.map(rule => {
-        const ruleRegExp = new RegExp(rule.test);
-        if (ruleRegExp.test(testMdFilename) && ruleRegExp.test(testMdxFilename)) {
-          rule.oneOf = [
-            {
-              test: glossaryRegex,
-              enforce: 'pre',
-              use: [
-                {
-                  loader: require.resolve('@grnet/webpack-glossary-loader'),
-                  options
-                }
-              ]
-            },
-            {
-              test: termsRegex,
-              enforce: 'pre',
-              use: [
-                {
-                  loader: require.resolve('@grnet/webpack-terms-loader'),
-                  options
-                }
-              ]
-            }
-          ];
-          rule.use.push(
-            {
-              loader: require.resolve('@grnet/webpack-terms-replace-loader'),
-              options
-            }
-          )
-        }
-        return rule;
+      let rule = config.module.rules.find((rule) => {
+        return rule.use && rule.use.some(({ loader }) => loader.includes('plugin-content-docs'));
       });
-      config.module.rules = newRules;
+
+      if (!rule) {
+        rule = config.module.rules.find((rule) => {
+          return rule.use && rule.use.some(({ loader }) => loader.includes('mdx-loader'));
+        });
+      }
+
+      if (!rule) {
+        const testMdFilename = 'test.md';
+        const testMdxFilename = 'test.mdx';
+        rule = config.module.rules.find((rule) => {
+          const ruleRegExp = new RegExp(rule.test);
+
+          return ruleRegExp.test(testMdFilename) && ruleRegExp.test(testMdxFilename);
+        });
+      }
+
+      if (rule) {
+        rule.oneOf = [
+          {
+            test: glossaryRegex,
+            enforce: 'pre',
+            use: [
+              {
+                loader: require.resolve('@grnet/webpack-glossary-loader'),
+                options
+              }
+            ]
+          },
+          {
+            test: termsRegex,
+            enforce: 'pre',
+            use: [
+              {
+                loader: require.resolve('@grnet/webpack-terms-loader'),
+                options
+              }
+            ]
+          }
+        ];
+        rule.use.push(
+          {
+            loader: require.resolve('@grnet/webpack-terms-replace-loader'),
+            options
+          }
+        );
+      }
       return {
         mergeStrategy: { 'module': 'replace' },
         module: config.module
